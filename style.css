@@ -1,0 +1,219 @@
+/* Custom scrollbar for better aesthetics */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #4b5563;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+    background-color: #1f2937;
+}
+
+/* Overrides for full-screen black canvas */
+body {
+    background-color: #000 !important;
+    margin: 0;
+    overflow: hidden; /* Prevent body scroll, the dashboard handles it */
+}
+#dashboard-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: auto; /* Allows scrolling if windows are placed off-screen */
+}
+
+/* Variable Window Styles */
+.variable-window {
+    position: absolute;
+    background-color: transparent;
+    border: 2px solid transparent;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    padding: 0.5rem;
+    cursor: move;
+    user-select: none;
+    overflow: hidden;
+    touch-action: none;
+    min-width: 100px;
+    min-height: 50px;
+    transition: border-color 120ms ease;
+}
+
+/* Show border only on hover */
+.variable-window:hover {
+    border-color: #fff;
+}
+
+/* Resizer Handle: hidden until hover */
+.resizer {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: nwse-resize;
+    border-bottom-right-radius: 0.5rem;
+    z-index: 10;
+
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 120ms ease;
+}
+
+/* Content Styles */
+.window-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+}
+.value-display {
+    font-size: 3rem;
+    font-weight: 800;
+    color: white;
+    text-align: center;
+    line-height: 1.1;
+    padding: 0 0.2rem;
+    pointer-events: none;
+    overflow-wrap: break-word;
+    width: 100%;
+}
+.variable-id {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-align: center;
+    margin-bottom: 0.2rem;
+    pointer-events: none;
+    overflow-wrap: break-word;
+}
+
+/* Custom Title Position */
+.custom-title {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 0.75rem;
+    color: white;
+    opacity: 0.7;
+    pointer-events: none;
+    max-width: calc(100% - 4.5rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Delete and Edit Button Base Styles */
+.control-button {
+    position: absolute;
+    top: 0.5rem;
+    cursor: pointer;
+    z-index: 10;
+    color: white;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 120ms ease, color 100ms ease;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+}
+
+.delete-button {
+    right: 0.5rem;
+}
+
+.edit-button {
+    right: 2.5rem;
+}
+
+.delete-button:hover { color: #ef4444; }
+.edit-button:hover { color: #2563eb; }
+
+/* Reveal controls on hover */
+.variable-window:hover .delete-button,
+.variable-window:hover .edit-button,
+.variable-window:hover .resizer {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* --- SIDEBAR AND TOGGLE FIXES --- */
+#sidebar {
+    width: 250px;
+    background-color: black;
+    border-right: 2px solid white;
+    padding: 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    overflow-y: auto;
+}
+#sidebar.open {
+    transform: translateX(0);
+}
+/* Hamburger menu now stays in the same place and is on top */
+#sidebar-toggle {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1001; /* CHANGED to 1001 to be higher than snap lines */
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 0.5rem;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Modal-specific CSS for 50% sizing */
+#edit-modal {
+    width: 50vw;
+    height: auto;
+    max-height: 90vh;
+    min-width: 300px;
+}
+/* Input Form Styles (Used in Modal) */
+.form-input-small {
+     width: 100%;
+     padding: 0.5rem 0.75rem;
+     background-color: #1f2937;
+     border: 1px solid #374151;
+     border-radius: 0.375rem;
+     font-size: 1rem;
+     color: white;
+}
+
+/* --- Snap Line Styles --- */
+.snap-line-x, .snap-line-y {
+    position: fixed; /* Use fixed so lines cover the entire viewport and don't scroll */
+    z-index: 1000; /* High z-index, but below the sidebar-toggle */
+    pointer-events: none; /* Allows dragging underneath the line */
+    background-color: #00ffff; /* Visible cyan color for alignment */
+    display: none; /* Hidden by default */
+}
+
+/* Vertical Snap Line (X position alignment) */
+.snap-line-x {
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    height: 100vh;
+    left: 0; /* Will be overwritten by JS */
+}
+
+/* Horizontal Snap Line (Y position alignment) */
+.snap-line-y {
+    left: 0;
+    right: 0;
+    height: 2px;
+    width: 100vw;
+    top: 0; /* Will be overwritten by JS */
+}

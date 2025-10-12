@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Companion Variable Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'companion-blue': '#2563eb',
+                        'companion-dark': '#1f2937',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="font-sans">
+
+    <button id="sidebar-toggle" onclick="console.log('Hamburger Clicked'); window.toggleSidebar()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+    
+    <div id="sidebar">
+        <h2 class="text-2xl font-bold text-white mb-6 mt-10">Menu</h2>
+        <div class="space-y-6">
+            
+            <button id="add-window-button" class="w-full px-3 py-2 mb-4 bg-white text-black font-semibold rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>New Variable</span>
+            </button>
+
+            <h3 class="text-white text-lg border-b border-gray-700 pb-2">Companion connection setup</h3>
+            
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <div>
+                        <label for="companion-ip" class="block text-sm font-medium text-gray-400 mb-1">IP Address</label>
+                        <input type="text" id="companion-ip" value="192.168.1.10" placeholder="e.g., 192.168.1.10"
+                               class="w-full px-2 py-1 bg-gray-900 border border-gray-600 rounded-lg text-sm text-white">
+                    </div>
+                    <div>
+                        <label for="companion-port" class="block text-sm font-medium text-gray-400 mb-1">Port (HTTP)</label>
+                        <input type="number" id="companion-port" value="8000" placeholder="e.g., 8000"
+                               class="w-full px-2 py-1 bg-gray-900 border border-gray-600 rounded-lg text-sm text-white">
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <button id="toggle-monitor-button"
+                        class="w-full px-3 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out">
+                    Start Monitoring (1s Interval)
+                </button>
+                <div id="status-message" class="p-2 text-center rounded-lg text-xs bg-yellow-900 text-yellow-300">
+                    Awaiting connection.
+                </div>
+            </div>
+
+            <h3 class="text-white text-lg border-b border-gray-700 pb-2 pt-4">Import / Export</h3>
+            <div class="space-y-2">
+                <button onclick="window.exportToXML()" class="w-full px-3 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition duration-150 ease-in-out flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 17l-4-4m0 0l-4 4m4-4v10" />
+                    </svg>
+                    <span>Save to XML</span>
+                </button>
+                <button onclick="window.triggerImportXML()" class="w-full px-3 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition duration-150 ease-in-out flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 12l4-4m0 0l4 4m-4-4v8" />
+                    </svg>
+                    <span>Load from XML</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="dashboard-container">
+        <input type="file" id="xml-upload-input" accept=".xml" style="display: none;">
+        <div id="snap-line-x" class="snap-line-x"></div>
+        <div id="snap-line-y" class="snap-line-y"></div>
+    </div>
+
+    <div id="modal-backdrop" class="hidden fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center">
+        <div id="edit-modal" class="bg-gray-800 rounded-lg p-6 shadow-2xl relative">
+            <form id="modal-form" onsubmit="window.submitVariable(event)" class="h-full flex flex-col justify-between">
+                
+                <div id="modal-form-fields" class="space-y-4 overflow-y-auto pr-2 flex-grow">
+                    <h4 id="modal-title" class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2"></h4>
+                    
+                    <div>
+                        <label for="modal-title-input" class="block text-sm font-medium text-gray-400 mb-1">Custom Title (Optional)</label>
+                        <input type="text" id="modal-title-input" placeholder="e.g., Time"
+                            class="form-input-small text-center focus:ring-2 focus:ring-companion-blue">
+                    </div>
+
+                    <div>
+                        <label for="modal-input-variable" class="block text-sm font-medium text-gray-400 mb-1">Variable ID (Required)</label>
+                        <input type="text" id="modal-input-variable" placeholder="internal:time_hms" 
+                            class="form-input-small text-center focus:ring-2 focus:ring-companion-blue" required>
+                    </div>
+
+                    <div class="flex space-x-4">
+                        <div class="flex-1">
+                            <label for="modal-bg-color" class="block text-sm font-medium text-gray-400 mb-1">Window BG Color</label>
+                            <input type="color" id="modal-bg-color" value="#000000" 
+                                class="w-full h-8 cursor-pointer rounded-md overflow-hidden bg-gray-900 border border-gray-600">
+                        </div>
+                        <div class="flex-1">
+                            <label for="modal-font-color" class="block text-sm font-medium text-gray-400 mb-1">Font Color</label>
+                            <input type="color" id="modal-font-color" value="#ffffff" 
+                                class="w-full h-8 cursor-pointer rounded-md overflow-hidden bg-gray-900 border border-gray-600">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Text Alignment</label>
+                        <div id="modal-alignment-radios" class="flex justify-around bg-gray-900 border border-gray-600 rounded-md p-2">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2 w-full mt-4 flex-shrink-0">
+                    <button type="button" onclick="window.closeModal()" class="w-1/2 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition duration-150 ease-in-out">Cancel</button>
+                    <button type="submit" id="modal-submit-button" class="w-1/2 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out">Monitor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

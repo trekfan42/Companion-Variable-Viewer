@@ -1,0 +1,56 @@
+
+{
+
+  "name": "companion-variable-dashboard",
+
+  "version": "1.0.0",
+
+  "description": "Bitfocus Companion Variable Dashboard wrapped in Electron.",
+
+  "main": "main.js",
+
+  "scripts": {
+
+    "start": "electron .",
+
+    "package": "electron-builder"
+
+  },
+
+  "keywords": [
+
+    "electron",
+
+    "companion"
+
+  ],
+
+  "author": "",
+
+  "license": "ISC",
+
+  "devDependencies": {
+
+    "electron": "^27.0.0",
+
+    "electron-builder": "^24.0.0"
+
+  },
+
+  "build": {
+
+    "appId": "com.yourdomain.companion-variable-dashboard",
+
+    "productName": "Companion Variable Dashboard",
+
+    "icon": "assets/icon.png",
+
+    "win": {
+
+      "target": "nsis"
+
+    }
+
+  }
+
+} 
