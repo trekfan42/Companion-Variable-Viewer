@@ -1,6 +1,6 @@
 # Companion Variable Viewer
 
-Add a configurable window on a freeform canvas for monitoring any varibale from companion
+Add a configurable window on a freeform canvas for monitoring any variable from companion
 
 
 <img width="1369" height="806" alt="Screenshot 2025-10-12 154637" src="https://github.com/user-attachments/assets/12043175-cf6f-4fb0-b86e-8325ea91dc5e" />
