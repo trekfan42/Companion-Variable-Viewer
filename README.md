@@ -15,5 +15,5 @@ Built for electron
 
 I dont have a Mac at the moment so if someone wants to build for mac and send me the dmg I can add a link for that...
 
-Window Download:
+Windows Download:
 https://drive.google.com/file/d/1TpuVMTjrJLZpwLR0ZFTooTJaIEL-EMvR/view?usp=sharing
