@@ -14,8 +14,8 @@ Add a configurable window on a freeform canvas for monitoring any varibale from 
 Built for electron
 
 Windows Download:
-https://drive.google.com/file/d/1TpuVMTjrJLZpwLR0ZFTooTJaIEL-EMvR/view
+https://drive.google.com/file/d/1TpuVMTjrJLZpwLR0ZFTooTJaIEL-EMvR/view?usp=drivesdk
 
 
 Mac Apple Silicon Download:
-https://drive.google.com/file/d/1fpQY_h03bq-mr4EHwgXTxKFpNkFnpeRz/view
+https://drive.google.com/file/d/1fpQY_h03bq-mr4EHwgXTxKFpNkFnpeRz/view?usp=drivesdk
