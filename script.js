@@ -70,6 +70,13 @@ let startHeight = 0;
 let startWindowX = 0;
 let startWindowY = 0;
 
+// Panning State
+let isPanning = false;
+let startScrollLeft = 0;
+let startScrollTop = 0;
+let pivotTouchX = 0;
+let pivotTouchY = 0;
+
 /**
  * Utility function to generate a new window object with defaults.
  */
@@ -560,6 +567,31 @@ function getWindowElement(id) {
     return document.getElementById(`win-${id}`);
 }
 
+/**
+ * Temporarily shows controls for a window (useful for touch devices).
+ * @param {string} id - The window ID.
+ * @param {boolean} persistent - If true, keeps controls visible until told otherwise (clears timeout).
+ */
+function showWindowControls(id, persistent = false) {
+    const winElement = getWindowElement(id);
+    if (!winElement) return;
+
+    // Clear any existing timeout
+    if (winElement._controlsTimeout) {
+        clearTimeout(winElement._controlsTimeout);
+        winElement._controlsTimeout = null;
+    }
+
+    winElement.classList.add('show-controls');
+
+    if (!persistent) {
+        winElement._controlsTimeout = setTimeout(() => {
+            winElement.classList.remove('show-controls');
+            winElement._controlsTimeout = null;
+        }, 2000);
+    }
+}
+
 // NEW: Snap Line Rendering Helpers
 function hideSnapLines() {
     if (snapLineX) snapLineX.style.display = 'none';
@@ -711,6 +743,9 @@ window.handleDragStart = function (e, id) {
         startWindowY = win.y;
 
         winElement.style.zIndex = variableWindows.length + 10;
+
+        // Show controls on tap/click (for mobile support)
+        showWindowControls(id);
     }
 }
 
@@ -734,6 +769,9 @@ window.handleResizeStart = function (e, id) {
         startHeight = win.height;
 
         winElement.style.zIndex = variableWindows.length + 10;
+
+        // Keep controls visible during active resize
+        showWindowControls(id, true);
     }
 }
 
@@ -753,6 +791,23 @@ window.handleDragMove = function (e) {
 
     const deltaX = clientX - startX;
     const deltaY = clientY - startY;
+
+    // --- NEW: Two-finger Panning ---
+    if (isPanning && e.touches && e.touches.length === 2) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentPivotX = (touch1.clientX + touch2.clientX) / 2;
+        const currentPivotY = (touch1.clientY + touch2.clientY) / 2;
+
+        const panDeltaX = currentPivotX - pivotTouchX;
+        const panDeltaY = currentPivotY - pivotTouchY;
+
+        dashboardContainer.scrollLeft = startScrollLeft - panDeltaX;
+        dashboardContainer.scrollTop = startScrollTop - panDeltaY;
+        return;
+    }
+
+    if (isPanning) return; // Don't drag windows if panning
 
     let newX = win.x;
     let newY = win.y;
@@ -850,22 +905,55 @@ window.handleDragMove = function (e) {
 
 window.handleDragEnd = function (e) {
     if (isDragging || isResizing) {
+        const wasResizing = isResizing;
+        const currentActiveId = activeWindowId;
+
         isDragging = false;
         isResizing = false;
 
-        const winElement = getWindowElement(activeWindowId);
+        const winElement = getWindowElement(currentActiveId);
         if (winElement) {
             winElement.style.cursor = 'move';
             winElement.style.zIndex = 1;
         }
 
         hideSnapLines(); // HIDE lines on drag end
+
+        // If we were resizing, start the 2s fade out now
+        if (wasResizing) {
+            showWindowControls(currentActiveId);
+        }
+
         saveDashboardState();
         activeWindowId = null;
+    }
+
+    if (isPanning) {
+        isPanning = false;
+        dashboardContainer.style.cursor = 'default';
     }
 }
 
 window.handleTouchStart = function (e, id, type) {
+    if (e.touches && e.touches.length === 2) {
+        // Switch to panning mode
+        isPanning = true;
+        isDragging = false;
+        isResizing = false;
+
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        pivotTouchX = (touch1.clientX + touch2.clientX) / 2;
+        pivotTouchY = (touch1.clientY + touch2.clientY) / 2;
+
+        startScrollLeft = dashboardContainer.scrollLeft;
+        startScrollTop = dashboardContainer.scrollTop;
+
+        dashboardContainer.style.cursor = 'grabbing';
+        e.preventDefault();
+        return;
+    }
+
     e.stopPropagation();
     e.preventDefault();
 
@@ -1031,7 +1119,7 @@ window.onload = function () {
     dashboardContainer.addEventListener('mousemove', window.handleDragMove);
     dashboardContainer.addEventListener('mouseup', window.handleDragEnd);
     dashboardContainer.addEventListener('touchmove', (e) => {
-        if (!isDragging && !isResizing) return;
+        if (!isDragging && !isResizing && !isPanning) return;
         window.handleDragMove(e);
     }, { passive: false });
     dashboardContainer.addEventListener('touchend', window.handleDragEnd);
