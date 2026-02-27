@@ -971,11 +971,10 @@ window.handleTouchStart = function (e, id, type) {
     e.stopPropagation();
     e.preventDefault();
 
-    const event = { touches: e.touches, target: e.target };
     if (type === 'drag') {
-        window.handleDragStart(event, id);
+        window.handleDragStart(e, id);
     } else if (type === 'resize') {
-        window.handleResizeStart(event, id);
+        window.handleResizeStart(e, id);
     }
 }
 
