@@ -954,6 +954,12 @@ window.handleTouchStart = function (e, id, type) {
         return;
     }
 
+    // If we are touching a control button, don't preventDefault
+    // so the browser can fire the subsequent click event.
+    if (e.target.closest('.control-button')) {
+        return;
+    }
+
     e.stopPropagation();
     e.preventDefault();
 
