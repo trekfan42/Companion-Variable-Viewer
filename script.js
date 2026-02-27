@@ -34,22 +34,15 @@ if (firebaseConfig) {
 let variableWindows = [];
 let editingWindowId = null;
 
-// Global variables for monitoring
+// Monitoring state
 let monitorInterval = null;
-const FETCH_INTERVAL_MS = 1000;
+let pollIntervalInput;
 
 // NEW: Snap threshold in pixels
 const SNAP_THRESHOLD = 10;
 
 // DOM Elements
-const ipInput = document.getElementById('companion-ip');
-const portInput = document.getElementById('companion-port');
-const dashboardContainer = document.getElementById('dashboard-container');
-const statusMessage = document.getElementById('status-message');
-const toggleButton = document.getElementById('toggle-monitor-button');
-const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebar-toggle');
-const addWindowButton = document.getElementById('add-window-button');
+let ipInput, portInput, dashboardContainer, statusMessage, toggleButton, sidebar, sidebarToggle, addWindowButton;
 
 // Modal Elements
 const modalBackdrop = document.getElementById('modal-backdrop');
@@ -64,7 +57,7 @@ const modalSubmitButton = document.getElementById('modal-submit-button');
 // NEW: Snap Line Elements (will be referenced in onload and renderDashboard)
 let snapLineX;
 let snapLineY;
-let xmlUploadInput; 
+let xmlUploadInput;
 
 // Drag/Resize State
 let activeWindowId = null;
@@ -81,33 +74,33 @@ let startWindowY = 0;
  * Utility function to generate a new window object with defaults.
  */
 function createNewWindowObject(id = crypto.randomUUID(), defaults = {}) {
-     const centerX = window.innerWidth / 2;
-     const centerY = window.innerHeight / 2;
-     const windowWidth = defaults.width || 350;
-     const windowHeight = defaults.height || 250;
-     
-     return {
-         id: id,
-         variableId: defaults.variableId || '',
-         customTitle: defaults.customTitle || '',
-         value: '...',
-         // Center the new window relative to current scroll position
-         x: defaults.x || (centerX - (windowWidth / 2) + dashboardContainer.scrollLeft), 
-         y: defaults.y || (centerY - (windowHeight / 2) + dashboardContainer.scrollTop),
-         width: windowWidth,
-         height: windowHeight,
-         bgColor: defaults.bgColor || '#000000',
-         fontColor: defaults.fontColor || '#ffffff',
-         textAlign: defaults.textAlign || 'center',
-         isEditing: false
-     };
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const windowWidth = defaults.width || 350;
+    const windowHeight = defaults.height || 250;
+
+    return {
+        id: id,
+        variableId: defaults.variableId || '',
+        customTitle: defaults.customTitle || '',
+        value: '...',
+        // Center the new window relative to current scroll position
+        x: defaults.x || (centerX - (windowWidth / 2) + dashboardContainer.scrollLeft),
+        y: defaults.y || (centerY - (windowHeight / 2) + dashboardContainer.scrollTop),
+        width: windowWidth,
+        height: windowHeight,
+        bgColor: defaults.bgColor || '#000000',
+        fontColor: defaults.fontColor || '#ffffff',
+        textAlign: defaults.textAlign || 'center',
+        isEditing: false
+    };
 }
 
 
 /**
  * Toggles the visibility of the sidebar.
  */
-window.toggleSidebar = function() {
+window.toggleSidebar = function () {
     sidebar.classList.toggle('open');
 }
 
@@ -134,10 +127,12 @@ function setStatus(message, type = 'warning') {
 function loadDashboardState() {
     const savedIP = localStorage.getItem('companionIP');
     const savedPort = localStorage.getItem('companionPort');
+    const savedPollInterval = localStorage.getItem('companionPollInterval');
     const savedWindows = localStorage.getItem('companionWindows');
 
     if (savedIP) ipInput.value = savedIP;
     if (savedPort) portInput.value = savedPort;
+    if (savedPollInterval) pollIntervalInput.value = savedPollInterval;
 
     if (savedWindows) {
         try {
@@ -178,12 +173,13 @@ function saveDashboardState() {
     // 1. Save settings
     localStorage.setItem('companionIP', ipInput.value.trim());
     localStorage.setItem('companionPort', portInput.value.trim());
+    localStorage.setItem('companionPollInterval', pollIntervalInput.value.trim());
 
     // 2. Save window state (including new properties)
     const stateToSave = variableWindows.map(win => ({
         id: win.id,
         variableId: win.variableId,
-        customTitle: win.customTitle, 
+        customTitle: win.customTitle,
         x: win.x,
         y: win.y,
         width: win.width,
@@ -202,13 +198,13 @@ function saveDashboardState() {
 function setDynamicFontSize(windowElement) {
     const width = windowElement.offsetWidth;
     const height = windowElement.offsetHeight;
-    
-    if (width === 0 || height === 0) return; 
 
-    const contentWidth = width - 10; 
-    const contentHeight = height - 30; 
+    if (width === 0 || height === 0) return;
 
-    const widthBasedSize = Math.floor(contentWidth * 0.20); 
+    const contentWidth = width - 10;
+    const contentHeight = height - 30;
+
+    const widthBasedSize = Math.floor(contentWidth * 0.20);
     const heightBasedSize = Math.floor(contentHeight * 0.50);
 
     const finalFontSize = Math.min(widthBasedSize, heightBasedSize);
@@ -225,22 +221,22 @@ function setDynamicFontSize(windowElement) {
 function renderDashboard() {
     // Clear the container
     dashboardContainer.innerHTML = '';
-    
+
     // Re-add hidden input and snap lines
     dashboardContainer.innerHTML = `
         <input type="file" id="xml-upload-input" accept=".xml" style="display: none;">
         <div id="snap-line-x" class="snap-line-x"></div>
         <div id="snap-line-y" class="snap-line-y"></div>
     `;
-    
+
     // Re-reference snap lines and XML input after clearing innerHTML
     snapLineX = document.getElementById('snap-line-x');
     snapLineY = document.getElementById('snap-line-y');
     xmlUploadInput = document.getElementById('xml-upload-input');
-    
+
     // Re-attach listener
-    xmlUploadInput.addEventListener('change', window.importFromXML); 
-    
+    xmlUploadInput.addEventListener('change', window.importFromXML);
+
     variableWindows.forEach((win, index) => {
         if (!win.variableId) return;
 
@@ -248,7 +244,7 @@ function renderDashboard() {
         windowElement.className = 'variable-window';
         windowElement.id = `win-${win.id}`;
         windowElement.setAttribute('data-index', index);
-        
+
         // Set position, size, and background color
         windowElement.style.left = `${win.x}px`;
         windowElement.style.top = `${win.y}px`;
@@ -280,16 +276,16 @@ function renderDashboard() {
             </div>
             <div class="resizer" onmousedown="window.handleResizeStart(event, '${win.id}')" ontouchstart="window.handleTouchStart(event, '${win.id}', 'resize')"></div>
         `;
-        
+
         // Add double-click to open modal on the content area
         windowElement.querySelector('.window-content').addEventListener('dblclick', (e) => {
-            e.stopPropagation(); 
+            e.stopPropagation();
             window.openModal(win.id);
         });
-        
+
         dashboardContainer.appendChild(windowElement);
     });
-    
+
     // Apply font sizing after DOM update
     setTimeout(() => {
         document.querySelectorAll('.variable-window').forEach(setDynamicFontSize);
@@ -297,14 +293,14 @@ function renderDashboard() {
 
     // Re-fetch variables if monitoring is active (to update values after render)
     if (monitorInterval) {
-         fetchVariable();
+        fetchVariable();
     }
 }
 
 /**
  * Opens the modal for editing an existing window or creating a new one.
  */
-window.openModal = function(id = null) {
+window.openModal = function (id = null) {
     editingWindowId = id;
     let win;
 
@@ -318,7 +314,7 @@ window.openModal = function(id = null) {
         win = createNewWindowObject();
         modalTitle.textContent = 'Create New Variable Monitor';
         modalSubmitButton.textContent = 'Add Monitor';
-        
+
         // Close sidebar if open
         if (sidebar.classList.contains('open')) {
             window.toggleSidebar();
@@ -330,7 +326,7 @@ window.openModal = function(id = null) {
     modalTitleInput.value = win.customTitle;
     modalBgColor.value = win.bgColor;
     modalFontColor.value = win.fontColor;
-    
+
     // Populate alignment radios
     modalAlignmentRadios.innerHTML = `
         ${['left', 'center', 'right'].map(align => `
@@ -340,7 +336,7 @@ window.openModal = function(id = null) {
             </label>
         `).join('')}
     `;
-    
+
     // Show modal
     modalBackdrop.classList.remove('hidden');
     // Auto-focus the variable input field
@@ -350,7 +346,7 @@ window.openModal = function(id = null) {
 /**
  * Closes the modal.
  */
-window.closeModal = function() {
+window.closeModal = function () {
     modalBackdrop.classList.add('hidden');
     editingWindowId = null;
 };
@@ -359,15 +355,15 @@ window.closeModal = function() {
 /**
  * Deletes a variable window.
  */
-window.deleteWindow = function(id) {
-     const win = variableWindows.find(w => w.id === id);
-     if (!win) return;
-     
-     const confirmationMessage = `Are you sure you want to delete the monitor for ${win.customTitle || win.variableId || 'this empty window'}?`;
-     if (!confirm(confirmationMessage)) {
+window.deleteWindow = function (id) {
+    const win = variableWindows.find(w => w.id === id);
+    if (!win) return;
+
+    const confirmationMessage = `Are you sure you want to delete the monitor for ${win.customTitle || win.variableId || 'this empty window'}?`;
+    if (!confirm(confirmationMessage)) {
         return;
-     }
-    
+    }
+
     variableWindows = variableWindows.filter(w => w.id !== id);
     saveDashboardState();
     renderDashboard();
@@ -376,15 +372,15 @@ window.deleteWindow = function(id) {
 /**
  * Submits the variable ID and custom title from the modal form.
  */
-window.submitVariable = function(event) {
+window.submitVariable = function (event) {
     event.preventDefault();
 
     let newVariableId = modalInputVariable.value.trim();
-    let newCustomTitle = modalTitleInput.value.trim(); 
+    let newCustomTitle = modalTitleInput.value.trim();
     let newBgColor = modalBgColor.value;
     let newFontColor = modalFontColor.value;
     let newTextAlign = document.querySelector('input[name="modal-align"]:checked')?.value || 'center';
-    
+
     // Sanitize the input to strip Companion's $( ) wrapper
     if (newVariableId.startsWith('$(') && newVariableId.endsWith(')')) {
         newVariableId = newVariableId.substring(2, newVariableId.length - 1);
@@ -408,27 +404,27 @@ window.submitVariable = function(event) {
         }
     } else {
         // ADD NEW WINDOW (create a new object and push it)
-         const newWin = createNewWindowObject(crypto.randomUUID(), {
-             variableId: newVariableId,
-             customTitle: newCustomTitle,
-             bgColor: newBgColor,
-             fontColor: newFontColor,
-             textAlign: newTextAlign,
-         });
-         variableWindows.push(newWin);
+        const newWin = createNewWindowObject(crypto.randomUUID(), {
+            variableId: newVariableId,
+            customTitle: newCustomTitle,
+            bgColor: newBgColor,
+            fontColor: newFontColor,
+            textAlign: newTextAlign,
+        });
+        variableWindows.push(newWin);
     }
 
     window.closeModal();
     saveDashboardState();
     renderDashboard();
-    
+
     if (monitorInterval) {
         fetchVariable();
     }
 }
 
 // --- XML Import/Export Functions (kept as is) ---
-function sanitizeFilename(filename) { 
+function sanitizeFilename(filename) {
     return filename.replace(/[/\\?%*:|"<>]/g, '') || 'companion_dashboard_export';
 }
 
@@ -453,7 +449,7 @@ window.exportToXML = function () {
         el.setAttribute('bgColor', win.bgColor || '#000000');
         el.setAttribute('fontColor', win.fontColor || '#ffffff');
         el.setAttribute('textAlign', win.textAlign || 'center');
-        
+
         windowsElement.appendChild(el);
     });
     root.appendChild(windowsElement);
@@ -475,11 +471,11 @@ window.exportToXML = function () {
 };
 
 
-window.triggerImportXML = function() {
+window.triggerImportXML = function () {
     xmlUploadInput.click();
 };
 
-window.importFromXML = function(event) {
+window.importFromXML = function (event) {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -499,10 +495,10 @@ window.importFromXML = function(event) {
 
             const settingsNode = xmlDoc.getElementsByTagName('Settings')[0];
             if (settingsNode) {
-                 ipInput.value = settingsNode.getAttribute('ip') || ipInput.value;
-                 portInput.value = settingsNode.getAttribute('port') || ipInput.value;
-                 localStorage.setItem('companionIP', ipInput.value);
-                 localStorage.setItem('companionPort', ipInput.value);
+                ipInput.value = settingsNode.getAttribute('ip') || ipInput.value;
+                portInput.value = settingsNode.getAttribute('port') || ipInput.value;
+                localStorage.setItem('companionIP', ipInput.value);
+                localStorage.setItem('companionPort', ipInput.value);
             }
 
             for (let i = 0; i < windowNodes.length; i++) {
@@ -546,7 +542,7 @@ window.importFromXML = function(event) {
 // --- Dragging, Resizing, and SNAPPING Handlers ---
 
 function getWindowElement(id) {
-     return document.getElementById(`win-${id}`);
+    return document.getElementById(`win-${id}`);
 }
 
 // NEW: Snap Line Rendering Helpers
@@ -599,7 +595,7 @@ function findSnap(currentWin, currentX, currentY, isDragging) {
         width: currentWin.width,
         height: currentWin.height
     };
-    
+
     // The list of alignment coordinates to check against. 
     const targetX = [];
     const targetY = [];
@@ -612,13 +608,13 @@ function findSnap(currentWin, currentX, currentY, isDragging) {
         targetX.push({ pos: targetWin.x, type: 'left' }); // Left edge
         targetX.push({ pos: targetWin.x + (targetWin.width / 2), type: 'center' }); // Center axis
         targetX.push({ pos: targetWin.x + targetWin.width, type: 'right' }); // Right edge
-    
+
         // Y alignment targets: Top, Middle, Bottom of target window
         targetY.push({ pos: targetWin.y, type: 'top' }); // Top edge
         targetY.push({ pos: targetWin.y + (targetWin.height / 2), type: 'middle' }); // Middle axis
         targetY.push({ pos: targetWin.y + targetWin.height, type: 'bottom' }); // Bottom edge
     });
-    
+
     // --- Horizontal (X) Snapping ---
     const currentXPoints = [
         { pos: current.left, offset: 0 },                       // Current left aligns with target (Left->Left snap)
@@ -628,13 +624,13 @@ function findSnap(currentWin, currentX, currentY, isDragging) {
 
     // If resizing, we only check the right edge
     if (isResizing && !isDragging) {
-         currentXPoints.splice(0, 2); 
+        currentXPoints.splice(0, 2);
     }
-    
+
     for (const cPoint of currentXPoints) {
         for (const tPoint of targetX) {
             const delta = Math.abs(cPoint.pos - tPoint.pos);
-            
+
             if (delta <= SNAP_THRESHOLD) {
                 // Snap found!
                 // Calculate the new X position for the *current* window
@@ -652,16 +648,16 @@ function findSnap(currentWin, currentX, currentY, isDragging) {
         { pos: current.middle, offset: current.height / 2 },    // Current middle aligns with target (Middle->Middle snap)
         { pos: current.bottom, offset: current.height },        // Current bottom aligns with target (Bottom->Bottom snap)
     ];
-    
+
     // If resizing, we only check the bottom edge
     if (isResizing && !isDragging) {
-         currentYPoints.splice(0, 2); 
+        currentYPoints.splice(0, 2);
     }
 
     for (const cPoint of currentYPoints) {
         for (const tPoint of targetY) {
             const delta = Math.abs(cPoint.pos - tPoint.pos);
-            
+
             if (delta <= SNAP_THRESHOLD) {
                 // Snap found!
                 // Calculate the new Y position for the *current* window
@@ -676,13 +672,13 @@ function findSnap(currentWin, currentX, currentY, isDragging) {
     return { finalX, finalY, snapX, snapY };
 }
 
-window.handleDragStart = function(e, id) {
+window.handleDragStart = function (e, id) {
     // Updated to also ignore control buttons
     if (e.target.classList.contains('resizer') || e.target.closest('.control-button')) {
         return;
     }
-    if (e.button !== 0 && !e.touches) return; 
-    
+    if (e.button !== 0 && !e.touches) return;
+
     activeWindowId = id;
     const winElement = getWindowElement(id);
     const win = variableWindows.find(w => w.id === id);
@@ -690,7 +686,7 @@ window.handleDragStart = function(e, id) {
     if (winElement && win) {
         isDragging = true;
         winElement.style.cursor = 'grabbing';
-        
+
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
@@ -698,14 +694,14 @@ window.handleDragStart = function(e, id) {
         startY = clientY;
         startWindowX = win.x;
         startWindowY = win.y;
-        
+
         winElement.style.zIndex = variableWindows.length + 10;
     }
 }
 
-window.handleResizeStart = function(e, id) {
-    e.stopPropagation(); 
-    if (e.button !== 0 && !e.touches) return; 
+window.handleResizeStart = function (e, id) {
+    e.stopPropagation();
+    if (e.button !== 0 && !e.touches) return;
 
     activeWindowId = id;
     const winElement = getWindowElement(id);
@@ -713,7 +709,7 @@ window.handleResizeStart = function(e, id) {
 
     if (winElement && win) {
         isResizing = true;
-        
+
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
@@ -721,12 +717,12 @@ window.handleResizeStart = function(e, id) {
         startY = clientY;
         startWidth = win.width;
         startHeight = win.height;
-        
+
         winElement.style.zIndex = variableWindows.length + 10;
     }
 }
 
-window.handleDragMove = function(e) {
+window.handleDragMove = function (e) {
     if (!isDragging && !isResizing) return;
     e.preventDefault(); // Prevents scroll/zoom on mobile when dragging
 
@@ -736,8 +732,8 @@ window.handleDragMove = function(e) {
     const winElement = getWindowElement(activeWindowId);
     const win = variableWindows.find(w => w.id === activeWindowId);
     if (!winElement || !win) {
-         hideSnapLines();
-         return;
+        hideSnapLines();
+        return;
     }
 
     const deltaX = clientX - startX;
@@ -749,7 +745,7 @@ window.handleDragMove = function(e) {
     let newHeight = win.height;
     let snapX = null;
     let snapY = null;
-    
+
     // --- 1. Calculate new potential position/size ---
     if (isDragging) {
         newX = startWindowX + deltaX;
@@ -758,16 +754,16 @@ window.handleDragMove = function(e) {
         newWidth = startWidth + deltaX;
         newHeight = startHeight + deltaY;
     }
-    
+
     // --- 2. Apply Snapping (for Dragging and Resizing) ---
     if (isDragging) {
         const snapResult = findSnap(
-            { id: win.id, width: win.width, height: win.height }, 
-            newX, 
-            newY, 
+            { id: win.id, width: win.width, height: win.height },
+            newX,
+            newY,
             true // isDragging
         );
-        
+
         newX = snapResult.finalX;
         newY = snapResult.finalY;
         snapX = snapResult.snapX;
@@ -779,43 +775,43 @@ window.handleDragMove = function(e) {
     } else if (isResizing) {
         // To snap the right/bottom edges during resize, we simulate a drag of the edge
         const simWin = { id: win.id, width: newWidth, height: newHeight };
-        
+
         // Simulated X check: check snap for the right edge of the new width
         const snapResultX = findSnap(
-            simWin, 
-            win.x, 
-            win.y, 
+            simWin,
+            win.x,
+            win.y,
             false // isDragging
         );
-        
+
         if (snapResultX.snapX !== null) {
             // new width = (snapped X coord) - (win.x)
             newWidth = snapResultX.snapX - win.x;
             snapX = snapResultX.snapX;
         }
-        
+
         // Simulated Y check: check snap for the bottom edge of the new height
         const snapResultY = findSnap(
-            simWin, 
-            win.x, 
-            win.y, 
+            simWin,
+            win.x,
+            win.y,
             false // isDragging
         );
-        
+
         if (snapResultY.snapY !== null) {
             // new height = (snapped Y coord) - (win.y)
             newHeight = snapResultY.snapY - win.y;
             snapY = snapResultY.snapY;
         }
-        
+
         // Apply minimum dimensions
-        if (newWidth >= 100) { 
+        if (newWidth >= 100) {
             win.width = newWidth;
         } else {
             snapX = null; // Clear snap line if we hit minimum size
         }
-        
-        if (newHeight >= 50) { 
+
+        if (newHeight >= 50) {
             win.height = newHeight;
         } else {
             snapY = null; // Clear snap line if we hit minimum size
@@ -830,34 +826,34 @@ window.handleDragMove = function(e) {
 
     // Re-calculate font size on resize
     if (isResizing) {
-         setDynamicFontSize(winElement);
+        setDynamicFontSize(winElement);
     }
 
     // --- 4. Render Snap Lines ---
     renderSnapLines(snapX, snapY);
 }
 
-window.handleDragEnd = function(e) {
+window.handleDragEnd = function (e) {
     if (isDragging || isResizing) {
         isDragging = false;
         isResizing = false;
-        
+
         const winElement = getWindowElement(activeWindowId);
         if (winElement) {
             winElement.style.cursor = 'move';
-            winElement.style.zIndex = 1; 
+            winElement.style.zIndex = 1;
         }
-        
+
         hideSnapLines(); // HIDE lines on drag end
         saveDashboardState();
         activeWindowId = null;
     }
 }
 
-window.handleTouchStart = function(e, id, type) {
-    e.stopPropagation(); 
+window.handleTouchStart = function (e, id, type) {
+    e.stopPropagation();
     e.preventDefault();
-    
+
     const event = { touches: e.touches, target: e.target };
     if (type === 'drag') {
         window.handleDragStart(event, id);
@@ -870,21 +866,21 @@ window.handleTouchStart = function(e, id, type) {
 async function fetchVariable() {
     const ip = ipInput.value.trim();
     const port = portInput.value.trim();
-    
+
     if (!ip || !port) {
         setStatus('Companion IP and Port are required.', 'error');
         return;
     }
 
     const activeWindows = variableWindows.filter(win => win.variableId);
-    
+
     if (activeWindows.length === 0) {
-         if (monitorInterval) {
+        if (monitorInterval) {
             setStatus('Monitoring is active but no variables are configured.', 'warning');
-         }
+        }
         return;
     }
-    
+
     for (let i = 0; i < activeWindows.length; i++) {
         const win = activeWindows[i];
         const fullVariableId = win.variableId;
@@ -893,31 +889,31 @@ async function fetchVariable() {
         const variableName = parts[1];
 
         let url = `http://${ip}:${port}/api/variable/${encodeURIComponent(connectionLabel)}/${encodeURIComponent(variableName)}/value`;
-        url += `?_t=${Date.now()}`; 
+        url += `?_t=${Date.now()}`;
 
         try {
-            const response = await fetch(url, { 
+            const response = await fetch(url, {
                 method: 'GET',
-                cache: 'no-store' 
+                cache: 'no-store'
             });
 
             const valueElement = document.getElementById(`value-${win.id}`);
             const windowElement = getWindowElement(win.id);
-            
+
             if (response.ok) {
                 const fetchedValue = await response.text();
                 const value = fetchedValue.replace(/\\n/g, '<br>') || 'N/A';
-                
+
                 win.value = value;
                 if (valueElement) {
-                    valueElement.innerHTML = value; 
-                    valueElement.style.color = win.fontColor; 
+                    valueElement.innerHTML = value;
+                    valueElement.style.color = win.fontColor;
                 }
-                
+
                 if (windowElement) setDynamicFontSize(windowElement);
 
                 if (monitorInterval) {
-                     setStatus(`Monitoring active: ${activeWindows.length} variables updating every 1 second.`, 'success');
+                    setStatus(`Monitoring active: ${activeWindows.length} variables updating every ${parseInt(pollIntervalInput.value) || 1000}ms.`, 'success');
                 }
             } else {
                 win.value = 'ERR';
@@ -941,39 +937,54 @@ async function fetchVariable() {
     }
 }
 
-window.toggleMonitoring = function() {
+window.toggleMonitoring = function () {
     if (monitorInterval) {
+        // Stop current monitoring
         clearInterval(monitorInterval);
         monitorInterval = null;
         toggleButton.classList.remove('bg-red-600', 'hover:bg-red-700');
         toggleButton.classList.add('bg-green-600', 'hover:bg-green-700');
-        toggleButton.textContent = 'Start Monitoring (1s Interval)';
+        toggleButton.textContent = 'Start Monitoring';
         setStatus('Monitoring stopped.', 'info');
     } else {
-        fetchVariable(); 
-        monitorInterval = setInterval(fetchVariable, FETCH_INTERVAL_MS);
+        // Start monitoring
+        saveDashboardState();
+
+        const interval = parseInt(pollIntervalInput.value) || 1000;
+
+        fetchVariable();
+        monitorInterval = setInterval(fetchVariable, interval);
+
+        toggleButton.textContent = `Stop Polling (${interval}ms)`;
+        setStatus(`Monitoring started (Polling every ${interval}ms).`, 'success');
+
         toggleButton.classList.remove('bg-green-600', 'hover:bg-green-700');
         toggleButton.classList.add('bg-red-600', 'hover:bg-red-700');
-        toggleButton.textContent = 'Stop Monitoring';
-        setStatus(`Monitoring started, updating every ${FETCH_INTERVAL_MS / 1000} second.`, 'success');
     }
 }
 
 // --- Event Listeners Setup ---
 
-window.onload = function() {
-    // Initial DOM references for the elements added by index.html before renderDashboard is called
+window.onload = function () {
+    // DOM Elements
+    ipInput = document.getElementById('companion-ip');
+    portInput = document.getElementById('companion-port');
+    pollIntervalInput = document.getElementById('poll-interval');
+    dashboardContainer = document.getElementById('dashboard-container');
+    statusMessage = document.getElementById('status-message');
+    toggleButton = document.getElementById('toggle-monitor-button');
+    sidebar = document.getElementById('sidebar');
+    sidebarToggle = document.getElementById('sidebar-toggle');
+    addWindowButton = document.getElementById('add-window-button');
+
     snapLineX = document.getElementById('snap-line-x');
     snapLineY = document.getElementById('snap-line-y');
     xmlUploadInput = document.getElementById('xml-upload-input');
 
     loadDashboardState();
-    
-    // New Variable button now opens the modal for a new entry
+
     addWindowButton.addEventListener('click', () => window.openModal(null));
-
     xmlUploadInput.addEventListener('change', window.importFromXML);
-
     toggleButton.addEventListener('click', window.toggleMonitoring);
 
     // Dashboard move/resize listeners
@@ -984,6 +995,11 @@ window.onload = function() {
         window.handleDragMove(e);
     }, { passive: false });
     dashboardContainer.addEventListener('touchend', window.handleDragEnd);
+
+    // Start monitoring immediately on startup
+    setTimeout(() => {
+        window.toggleMonitoring();
+    }, 500);
 };
 
 // Expose helper functions globally for use by dynamically generated content
@@ -991,8 +1007,8 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.deleteWindow = deleteWindow;
 window.submitVariable = submitVariable;
-window.exportToXML = exportToXML; 
-window.importFromXML = importFromXML; 
+window.exportToXML = exportToXML;
+window.importFromXML = importFromXML;
 window.triggerImportXML = triggerImportXML;
 window.toggleSidebar = toggleSidebar; // Ensure this is explicitly exposed globally
 
