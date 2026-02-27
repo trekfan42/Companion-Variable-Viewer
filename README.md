@@ -9,7 +9,7 @@ Add a configurable variable display window on a freeform canvas with edge snappi
 
 <img width="1368" height="806" alt="Screenshot 2025-10-12 154721" src="https://github.com/user-attachments/assets/539e795a-9c8a-45a9-a3cc-8aa36524b325" />
 
-
+____________________
 ChangeLog:
 
 v1.2.0 - Added P2P Host and Join
@@ -19,22 +19,23 @@ v1.2.0 - Added P2P Host and Join
   - Connected Peers dont poll, they receive updates ad-hoc to optimize bandwith
 
 
-
+____________________
 Built for electron and Web.
 
-Run in Browser from Deployments:
+Run in Browser from Github Pages Deployments:
 
 https://trekfan42.github.io/Companion-Variable-Viewer/
 
+
+____________________
 Windows Download:
 
-v1.1.0 - 
-https://drive.google.com/file/d/1s5G0z6w40uvbA0_zIBFhDyO-aLujpVI-/view?usp=sharing
+[v1.2.0 Google Drive Download](https://drive.google.com/file/d/1UFEGBpIUc0Sp-hYKlwaCNWRPpJxqne9R/view?usp=sharing)
 
 
+____________________
 Mac Apple Silicon Download:
 
 (Outdated, wouldn't mind someone helping here... Let me know if you can build it and I will host it)
 
-v1.0.0 - 
-https://drive.google.com/file/d/1fpQY_h03bq-mr4EHwgXTxKFpNkFnpeRz/view?usp=drivesdk
+[v1.0.0 Google Drive Download](https://drive.google.com/file/d/1fpQY_h03bq-mr4EHwgXTxKFpNkFnpeRz/view?usp=sharing)
