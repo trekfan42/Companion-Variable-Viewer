@@ -954,9 +954,17 @@ window.handleTouchStart = function (e, id, type) {
         return;
     }
 
-    // If we are touching a control button, don't preventDefault
-    // so the browser can fire the subsequent click event.
-    if (e.target.closest('.control-button')) {
+    // If we are touching a control button, trigger its action immediately
+    // for much better responsiveness on mobile touch screens.
+    const button = e.target.closest('.control-button');
+    if (button) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (button.classList.contains('edit-button')) {
+            window.openModal(id);
+        } else if (button.classList.contains('delete-button')) {
+            window.deleteWindow(id);
+        }
         return;
     }
 
