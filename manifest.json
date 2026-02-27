@@ -1,0 +1,23 @@
+{
+    "name": "Companion Variable Dashboard",
+    "short_name": "Companion Dash",
+    "description": "Real-time Bitfocus Companion Variable Viewer",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#1f2937",
+    "theme_color": "#2563eb",
+    "icons": [
+        {
+            "src": "assets/icon.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "assets/icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
