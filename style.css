@@ -75,6 +75,18 @@ body {
     transition: opacity 120ms ease;
 }
 
+/* Increase touch hit area for the resizer on mobile */
+@media (pointer: coarse) {
+    .resizer::after {
+        content: '';
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        right: 0;
+        bottom: 0;
+    }
+}
+
 /* Content Styles */
 .window-content {
     display: flex;
