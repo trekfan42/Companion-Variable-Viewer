@@ -265,3 +265,114 @@ body {
     top: 0;
     /* Will be overwritten by JS */
 }
+
+/* Custom Color Picker Styles */
+.custom-color-picker {
+    position: relative;
+    width: 100%;
+}
+
+.color-trigger {
+    width: 100%;
+    height: 42px;
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    cursor: pointer;
+    transition: all 150ms ease;
+    gap: 0.75rem;
+}
+
+.color-trigger:hover {
+    border-color: #4b5563;
+    background-color: #1f2937;
+}
+
+.color-trigger .swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.color-trigger span {
+    font-family: 'Inter', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875rem;
+    color: #e5e7eb;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.palette-popover {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.5rem;
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    z-index: 200;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    backdrop-filter: blur(8px);
+}
+
+.palette-popover.hidden {
+    display: none;
+}
+
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+}
+
+.color-option {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 100ms ease, border-color 100ms ease;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    border-color: white;
+    z-index: 10;
+}
+
+.color-option.active {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+.hex-input {
+    width: 100%;
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 0.375rem;
+    padding: 0.4rem 0.6rem;
+    color: white;
+    font-size: 0.8rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    text-align: center;
+}
+
+.hex-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+}
+
+/* Ensure the modal content is high enough to show popovers */
+#modal-form-fields {
+    overflow-y: visible !important;
+}
