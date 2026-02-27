@@ -40,6 +40,10 @@ const PROFESSIONAL_PALETTE = [
 let variableWindows = [];
 let editingWindowId = null;
 
+// P2P Broadcast Optimization
+let lastBroadcastedLayout = '';
+let lastBroadcastedValues = {};
+
 // Monitoring state
 let monitorInterval = null;
 let pollIntervalInput;
@@ -203,6 +207,13 @@ function saveDashboardState() {
     }));
 
     localStorage.setItem('companionWindows', JSON.stringify(stateToSave));
+
+    // Broadcast layout changes if hosting AND layout has changed
+    const currentLayout = JSON.stringify(stateToSave);
+    if (typeof broadcastLayout === 'function' && currentLayout !== lastBroadcastedLayout) {
+        lastBroadcastedLayout = currentLayout;
+        broadcastLayout();
+    }
 }
 
 /**
@@ -329,6 +340,9 @@ function renderDashboard() {
  * Opens the modal for editing an existing window or creating a new one.
  */
 window.openModal = function (id = null) {
+    // Block interactions for peers
+    if (document.body.classList.contains('is-peer')) return;
+
     editingWindowId = id;
     let win;
 
@@ -385,6 +399,9 @@ window.closeModal = function () {
  * Deletes a variable window.
  */
 window.deleteWindow = function (id) {
+    // Block interactions for peers
+    if (document.body.classList.contains('is-peer')) return;
+
     const win = variableWindows.find(w => w.id === id);
     if (!win) return;
 
@@ -446,6 +463,11 @@ window.submitVariable = function (event) {
     window.closeModal();
     saveDashboardState();
     renderDashboard();
+
+    // Force an immediate variable fetch and broadcast if hosting
+    if (isHost) {
+        fetchVariable();
+    }
 
     if (monitorInterval) {
         fetchVariable();
@@ -807,6 +829,9 @@ function findSnap(currentWin, currentX, currentY, isDragging) {
 }
 
 window.handleDragStart = function (e, id) {
+    // Block interactions for peers
+    if (document.body.classList.contains('is-peer')) return;
+
     // Updated to also ignore control buttons
     if (e.target.classList.contains('resizer') || e.target.closest('.control-button')) {
         return;
@@ -837,6 +862,9 @@ window.handleDragStart = function (e, id) {
 }
 
 window.handleResizeStart = function (e, id) {
+    // Block interactions for peers
+    if (document.body.classList.contains('is-peer')) return;
+
     e.stopPropagation();
     if (e.button !== 0 && !e.touches) return;
 
@@ -1045,6 +1073,13 @@ window.handleTouchStart = function (e, id, type) {
     // for much better responsiveness on mobile touch screens.
     const button = e.target.closest('.control-button');
     if (button) {
+        // Block interactions for peers
+        if (document.body.classList.contains('is-peer')) {
+            e.stopPropagation();
+            e.preventDefault();
+            return;
+        }
+
         e.stopPropagation();
         e.preventDefault();
         if (button.classList.contains('edit-button')) {
@@ -1084,6 +1119,7 @@ async function fetchVariable() {
         return;
     }
 
+    const updates = [];
     for (let i = 0; i < activeWindows.length; i++) {
         const win = activeWindows[i];
         const fullVariableId = win.variableId;
@@ -1121,6 +1157,13 @@ async function fetchVariable() {
                 const value = fetchedValue.replace(/\\n/g, '<br>') || 'N/A';
 
                 win.value = value;
+
+                // Only broadcast if value changed
+                if (value !== lastBroadcastedValues[win.id]) {
+                    updates.push({ id: win.id, value: value });
+                    lastBroadcastedValues[win.id] = value;
+                }
+
                 if (valueElement) {
                     valueElement.innerHTML = value;
                     valueElement.style.color = win.fontColor;
@@ -1151,6 +1194,11 @@ async function fetchVariable() {
             setStatus(`Network Error: Cannot reach Companion at ${ip}:${port}.`, 'error');
         }
     }
+
+    // Broadcast updates if hosting
+    if (updates.length > 0 && typeof broadcastVariableUpdates === 'function') {
+        broadcastVariableUpdates(updates);
+    }
 }
 
 window.toggleMonitoring = function () {
@@ -1177,6 +1225,210 @@ window.toggleMonitoring = function () {
         toggleButton.classList.remove('bg-green-600', 'hover:bg-green-700');
         toggleButton.classList.add('bg-red-600', 'hover:bg-red-700');
     }
+}
+
+// --- PeerJS / P2P Logic ---
+let peer = null;
+let connections = [];
+let isHost = false;
+let currentPin = '';
+const PEER_PREFIX = 'companion-dash-';
+
+window.hostDashboard = function () {
+    if (peer) peer.destroy();
+
+    // Generate a random 4-digit PIN
+    currentPin = Math.floor(1000 + Math.random() * 9000).toString();
+    const peerId = PEER_PREFIX + currentPin;
+
+    peer = new Peer(peerId);
+
+    peer.on('open', (id) => {
+        isHost = true;
+        document.getElementById('p2p-host-controls').classList.add('hidden');
+        document.getElementById('p2p-info').classList.remove('hidden');
+        document.getElementById('host-pin-display').textContent = currentPin;
+        document.getElementById('peer-count').textContent = '0 peers connected';
+        setStatus(`Hosting started. PIN: ${currentPin}`, 'success');
+    });
+
+    peer.on('connection', (conn) => {
+        connections.push(conn);
+        updatePeerCount();
+
+        conn.on('open', () => {
+            // Send current state to the new peer
+            conn.send({
+                type: 'layout',
+                windows: variableWindows,
+                settings: {
+                    ip: ipInput.value,
+                    port: portInput.value
+                }
+            });
+        });
+
+        conn.on('close', () => {
+            connections = connections.filter(c => c !== conn);
+            updatePeerCount();
+        });
+
+        conn.on('error', (err) => {
+            console.error('Connection Error:', err);
+            connections = connections.filter(c => c !== conn);
+            updatePeerCount();
+        });
+    });
+
+    peer.on('error', (err) => {
+        console.error('PeerJS Error:', err);
+        if (err.type === 'unavailable-id') {
+            // Try again with a different PIN if collision
+            window.hostDashboard();
+        } else {
+            setStatus('P2P Error: ' + err.message, 'error');
+        }
+    });
+}
+
+function updatePeerCount() {
+    const el = document.getElementById('peer-count');
+    if (el) el.textContent = `${connections.length} peers connected`;
+}
+
+window.stopHosting = function () {
+    if (peer) {
+        peer.destroy();
+        peer = null;
+    }
+    connections = [];
+    isHost = false;
+    document.getElementById('p2p-host-controls').classList.remove('hidden');
+    document.getElementById('p2p-info').classList.add('hidden');
+    setStatus('Hosting stopped.', 'info');
+}
+
+window.openJoinModal = function () {
+    document.getElementById('join-modal-backdrop').classList.remove('hidden');
+}
+
+window.closeJoinModal = function () {
+    document.getElementById('join-modal-backdrop').classList.add('hidden');
+}
+
+window.joinHost = function () {
+    const pin = document.getElementById('join-pin-input').value.trim();
+    if (pin.length !== 4) {
+        setStatus('PIN must be 4 digits', 'warning');
+        return;
+    }
+
+    if (peer) peer.destroy();
+
+    peer = new Peer();
+    peer.on('open', (id) => {
+        const conn = peer.connect(PEER_PREFIX + pin);
+        conn.on('open', () => {
+            setStatus(`Connected to host ${pin}`, 'success');
+            window.closeJoinModal();
+            // Stop local polling if we are a peer
+            if (monitorInterval) window.toggleMonitoring();
+
+            document.getElementById('host-button').disabled = true;
+            document.getElementById('host-button').classList.add('opacity-50');
+            document.getElementById('join-button').textContent = 'Leave Host';
+            document.getElementById('join-button').onclick = window.leaveHost;
+            document.getElementById('companion-setup-section').classList.add('hidden');
+            document.getElementById('add-window-button').classList.add('hidden');
+            document.body.classList.add('is-peer');
+        });
+
+        conn.on('data', (data) => {
+            if (data.type === 'layout') {
+                variableWindows = data.windows;
+                ipInput.value = data.settings.ip;
+                portInput.value = data.settings.port;
+                renderDashboard();
+            } else if (data.type === 'variableUpdate') {
+                data.updates.forEach(update => {
+                    const win = variableWindows.find(w => w.id === update.id);
+                    if (win) {
+                        win.value = update.value;
+                        const valueElement = document.getElementById(`value-${win.id}`);
+                        if (valueElement) {
+                            valueElement.innerHTML = update.value;
+                            valueElement.style.color = win.fontColor;
+                        }
+                        const windowElement = getWindowElement(win.id);
+                        if (windowElement) setDynamicFontSize(windowElement);
+                    }
+                });
+            }
+        });
+
+        conn.on('close', () => {
+            setStatus('Connection to host lost', 'warning');
+            window.leaveHost();
+        });
+
+        conn.on('error', (err) => {
+            console.error('Join Connection Error:', err);
+            setStatus('Connection failed: ' + err.message, 'error');
+            window.leaveHost();
+        });
+    });
+
+    peer.on('error', (err) => {
+        console.error('PeerJS Error:', err);
+        setStatus('P2P Error: ' + err.message, 'error');
+    });
+}
+
+window.leaveHost = function () {
+    if (peer) {
+        peer.destroy();
+        peer = null;
+    }
+    document.getElementById('host-button').disabled = false;
+    document.getElementById('host-button').classList.remove('opacity-50');
+    document.getElementById('join-button').textContent = 'Join Host';
+    document.getElementById('join-button').onclick = window.openJoinModal;
+    document.getElementById('companion-setup-section').classList.remove('hidden');
+    document.getElementById('add-window-button').classList.remove('hidden');
+    document.body.classList.remove('is-peer');
+    setStatus('Left host.', 'info');
+}
+
+function broadcastLayout() {
+    if (!isHost || connections.length === 0) return;
+
+    // Reset broadcast tracking so peers get fresh values after the layout/config change
+    lastBroadcastedValues = {};
+
+    connections.forEach(conn => {
+        if (conn.open) {
+            conn.send({
+                type: 'layout',
+                windows: variableWindows,
+                settings: {
+                    ip: ipInput.value,
+                    port: portInput.value
+                }
+            });
+        }
+    });
+}
+
+function broadcastVariableUpdates(updates) {
+    if (!isHost || connections.length === 0) return;
+    connections.forEach(conn => {
+        if (conn.open) {
+            conn.send({
+                type: 'variableUpdate',
+                updates: updates
+            });
+        }
+    });
 }
 
 // --- Event Listeners Setup ---
@@ -1246,6 +1498,14 @@ window.handleResizeStart = handleResizeStart;
 window.handleTouchStart = handleTouchStart;
 window.handleDragMove = handleDragMove;
 window.handleDragEnd = handleDragEnd;
+
+// P2P Exports
+window.hostDashboard = hostDashboard;
+window.stopHosting = stopHosting;
+window.openJoinModal = openJoinModal;
+window.closeJoinModal = closeJoinModal;
+window.joinHost = joinHost;
+window.leaveHost = leaveHost;
 
 // Re-calculate font size on window resize
 window.addEventListener('resize', renderDashboard);
