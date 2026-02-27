@@ -372,7 +372,36 @@ body {
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
 }
 
+/* --- PeerJS / P2P UI --- */
+#host-pin-display {
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+#p2p-info {
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: inset 0 0 15px rgba(99, 102, 241, 0.1);
+}
+
+#join-modal-backdrop {
+    backdrop-filter: blur(8px);
+    z-index: 110 !important;
+}
+
+#join-pin-input:focus {
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.4);
+}
+
 /* Ensure the modal content is high enough to show popovers */
 #modal-form-fields {
     overflow-y: visible !important;
+}
+/* Peer specific restrictions */
+body.is-peer .edit-button,
+body.is-peer .delete-button,
+body.is-peer .resizer {
+    display: none !important;
+}
+
+body.is-peer .variable-window {
+    cursor: default !important;
 }
