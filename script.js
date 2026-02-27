@@ -987,6 +987,18 @@ window.onload = function () {
     xmlUploadInput.addEventListener('change', window.importFromXML);
     toggleButton.addEventListener('click', window.toggleMonitoring);
 
+    // Live update the interval if it's already running
+    pollIntervalInput.addEventListener('change', () => {
+        saveDashboardState();
+        if (monitorInterval) {
+            clearInterval(monitorInterval);
+            const interval = parseInt(pollIntervalInput.value) || 1000;
+            monitorInterval = setInterval(fetchVariable, interval);
+            toggleButton.textContent = `Stop Polling (${interval}ms)`;
+            setStatus(`Interval updated: ${interval}ms`, 'success');
+        }
+    });
+
     // Dashboard move/resize listeners
     dashboardContainer.addEventListener('mousemove', window.handleDragMove);
     dashboardContainer.addEventListener('mouseup', window.handleDragEnd);
