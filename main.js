@@ -4,32 +4,30 @@ const fs = require('fs');
 
 let mainWindow;
 
-function createWindow () {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({
-    width: 1200,          // Default width
-    height: 800,         // Default height
-    minWidth: 500,       // Minimum size to prevent issues
-    minHeight: 400,
-    backgroundColor: '#000000',
-    title: 'Companion Variable Dashboard',
-    webPreferences: {
-      // Allows use of Node.js features in the renderer process (your index.html).
+function createWindow() {
+    // Create the browser window.
+    mainWindow = new BrowserWindow({
+        width: 1200,          // Default width
+        height: 800,         // Default height
+        minWidth: 500,       // Minimum size to prevent issues
+        minHeight: 400,
+        backgroundColor: '#000000',
+        title: 'Companion Variable Dashboard',
+        webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js') // Optional, for context isolation
+            preload: path.join(__dirname, 'preload.js')
         }
     });
 
-  mainWindow.loadFile('index.html');
-
+    mainWindow.loadFile('index.html');
 }
 
 // Function to handle the exportToXML request
 async function handleExportToXML(xmlData) {
     const { filePath } = await dialog.showSaveDialog(mainWindow, {
         title: 'Save XML File',
-        defaultPath: 'companion_variables.xml', // Default filename
+        defaultPath: 'companion_variables.xml',
         filters: [{ name: 'XML Files', extensions: ['xml'] }]
     });
 
@@ -45,38 +43,24 @@ async function handleExportToXML(xmlData) {
     }
 }
 
-// This method will be called when Electron has finished initialization.
+// --- IPC IPC Handlers ---
+
+ipcMain.handle('export-to-xml', (event, xmlData) => handleExportToXML(xmlData));
+
 app.whenReady().then(() => {
-    ipcMain.handle('export-to-xml', handleExportToXML);
     createWindow();
 });
 
-
-// Quit when all windows are closed, except on macOS.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
 });
 
-// Add the following lines to the end of the file:
-// Expose the handleExportToXML function to the renderer process
-// This is done by the preload script.
-app.on('web-contents-created', (event, webContents) => {
-    webContents.on('did-finish-load', () => {
-        webContents.executeJavaScript(`
-            window.electronAPI = {
-                exportToXML: (xmlData) => {
-                    return window.electron.ipcRenderer.invoke('export-to-xml', xmlData);
-                }
-            };
-        `);
-    });
-});
-
-// Re-create a window in the app when the dock icon is clicked (macOS).
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+    }
 });
+
+
