@@ -37,6 +37,7 @@
         }
     </script>
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 
 <body class="font-sans">
@@ -61,41 +62,78 @@
                 <span>New Variable</span>
             </button>
 
-            <h3 class="text-white text-lg border-b border-gray-700 pb-2">Companion connection setup</h3>
+            <div id="companion-setup-section">
+                <h3 class="text-white text-lg border-b border-gray-700 pb-2">Companion connection setup</h3>
 
-            <div class="space-y-4">
-                <div class="space-y-2">
-                    <div>
-                        <label for="companion-ip" class="block text-sm font-medium text-gray-400 mb-1">IP
-                            Address</label>
-                        <input type="text" id="companion-ip" value="127.0.0.1" placeholder="e.g., 127.0.0.1"
-                            class="w-full px-2 py-1 bg-gray-900 border border-gray-600 rounded-lg text-sm text-white">
-                    </div>
-                    <div>
-                        <label for="companion-port" class="block text-sm font-medium text-gray-400 mb-1">Port
-                            (HTTP)</label>
-                        <input type="number" id="companion-port" value="8000" placeholder="e.g., 8000"
-                            class="w-full px-2 py-1 bg-gray-900 border border-gray-600 rounded-lg text-sm text-white">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <div>
+                            <label for="companion-ip" class="block text-sm font-medium text-gray-400 mb-1">IP
+                                Address</label>
+                            <input type="text" id="companion-ip" value="127.0.0.1" placeholder="e.g., 127.0.0.1"
+                                class="w-full px-2 py-1 bg-gray-900 border border-gray-600 rounded-lg text-sm text-white">
+                        </div>
+                        <div>
+                            <label for="companion-port" class="block text-sm font-medium text-gray-400 mb-1">Port
+                                (HTTP)</label>
+                            <input type="number" id="companion-port" value="8000" placeholder="e.g., 8000"
+                                class="w-full px-2 py-1 bg-gray-900 border border-gray-600 rounded-lg text-sm text-white">
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label for="poll-interval" class="block text-sm font-medium text-gray-400 mb-1">Polling Interval
-                        (ms)</label>
-                    <input type="number" id="poll-interval" value="1000" min="100" step="100"
-                        class="w-full px-2 py-1 bg-gray-900 border border-gray-600 rounded-lg text-sm text-white">
+                <div class="space-y-4">
+                    <div>
+                        <label for="poll-interval" class="block text-sm font-medium text-gray-400 mb-1">Polling Interval
+                            (ms)</label>
+                        <input type="number" id="poll-interval" value="1000" min="100" step="100"
+                            class="w-full px-2 py-1 bg-gray-900 border border-gray-600 rounded-lg text-sm text-white">
+                    </div>
+
+                    <div class="space-y-2">
+                        <button id="toggle-monitor-button"
+                            class="w-full px-3 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out">
+                            Start Monitoring
+                        </button>
+                        <div id="status-message"
+                            class="p-2 text-center rounded-lg text-xs bg-yellow-900 text-yellow-300">
+                            Awaiting connection.
+                        </div>
+                    </div>
                 </div>
 
-                <div class="space-y-2">
-                    <button id="toggle-monitor-button"
-                        class="w-full px-3 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out">
-                        Start Monitoring
+                <div class="pt-4 space-y-2 border-t border-gray-700">
+                    <div id="p2p-host-controls" class="space-y-2">
+                        <button id="host-button" onclick="window.hostDashboard()"
+                            class="w-full px-3 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-150 ease-in-out flex items-center justify-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.05 9.05 0 0112.142 0M2.929 7.929a13 13 0 0118.142 0" />
+                            </svg>
+                            <span>Host Layout</span>
+                        </button>
+                    </div>
+
+                    <div id="p2p-info" class="hidden p-3 bg-indigo-900 rounded-lg text-center space-y-1">
+                        <div class="text-indigo-200 text-xs uppercase font-bold tracking-wider">Host PIN</div>
+                        <div id="host-pin-display" class="text-3xl font-mono font-bold text-white tracking-widest">
+                            0000
+                        </div>
+                        <div id="peer-count" class="text-indigo-300 text-xs">0 peers connected</div>
+                        <button onclick="window.stopHosting()"
+                            class="mt-2 text-xs text-indigo-200 hover:text-white underline">Stop Hosting</button>
+                    </div>
+
+                    <button id="join-button" onclick="window.openJoinModal()"
+                        class="w-full px-3 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition duration-150 ease-in-out flex items-center justify-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                        <span>Join Host</span>
                     </button>
-                    <div id="status-message" class="p-2 text-center rounded-lg text-xs bg-yellow-900 text-yellow-300">
-                        Awaiting connection.
-                    </div>
                 </div>
             </div>
 
@@ -136,10 +174,12 @@
             <form id="modal-form" onsubmit="window.submitVariable(event)" class="h-full flex flex-col justify-between">
 
                 <div id="modal-form-fields" class="space-y-4 overflow-y-auto pr-2 flex-grow">
-                    <h4 id="modal-title" class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2"></h4>
+                    <h4 id="modal-title" class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">
+                    </h4>
 
                     <div>
-                        <label for="modal-title-input" class="block text-sm font-medium text-gray-400 mb-1">Custom Title
+                        <label for="modal-title-input" class="block text-sm font-medium text-gray-400 mb-1">Custom
+                            Title
                             (Optional)</label>
                         <input type="text" id="modal-title-input" placeholder="e.g., Time"
                             class="form-input-small text-center focus:ring-2 focus:ring-companion-blue">
@@ -201,6 +241,29 @@
         </div>
     </div>
 
+
+    <!-- Join Modal -->
+    <div id="join-modal-backdrop"
+        class="hidden fixed inset-0 bg-black bg-opacity-75 z-[110] flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl p-8 shadow-2xl w-full max-w-sm border border-gray-700">
+            <h3 class="text-2xl font-bold text-white mb-6 text-center">Join Host</h3>
+            <div class="space-y-6 text-center">
+                <div>
+                    <label for="join-pin-input" class="block text-sm font-medium text-gray-400 mb-3">Enter 4-Digit
+                        Host
+                        PIN</label>
+                    <input type="text" id="join-pin-input" maxlength="4" placeholder="0000"
+                        class="w-full py-4 bg-gray-900 border-2 border-indigo-500 rounded-xl text-4xl text-white text-center font-mono tracking-widest focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all">
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="window.closeJoinModal()"
+                        class="flex-1 py-3 bg-gray-700 text-gray-300 font-bold rounded-xl hover:bg-gray-600 transition duration-150">Cancel</button>
+                    <button onclick="window.joinHost()"
+                        class="flex-2 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition duration-150 px-8">Connect</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="script.js"></script>
 </body>
