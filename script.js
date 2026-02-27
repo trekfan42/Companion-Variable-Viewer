@@ -30,6 +30,12 @@ if (firebaseConfig) {
 }
 // --- End Firebase Setup ---
 
+const PROFESSIONAL_PALETTE = [
+    '#000000', '#ffffff', '#2563eb', '#dc2626', '#16a34a', '#ea580c',
+    '#ca8a04', '#9333ea', '#0891b2', '#4b5563', '#111827', '#fb7185',
+    '#312e81', '#065f46', '#991b1b', '#854d0e', '#3f3f46', '#71717a'
+];
+
 // Dashboard state management
 let variableWindows = [];
 let editingWindowId = null;
@@ -346,8 +352,9 @@ window.openModal = function (id = null) {
     // Populate form fields
     modalInputVariable.value = win.variableId;
     modalTitleInput.value = win.customTitle;
-    modalBgColor.value = win.bgColor;
-    modalFontColor.value = win.fontColor;
+
+    // Sync custom color pickers
+    window.updateCustomColorPickers(win.bgColor, win.fontColor);
 
     // Populate alignment radios
     modalAlignmentRadios.innerHTML = `
@@ -565,6 +572,86 @@ window.importFromXML = function (event) {
 
 function getWindowElement(id) {
     return document.getElementById(`win-${id}`);
+}
+
+/**
+ * Custom Color Picker Logic
+ */
+window.updateCustomColorPickers = function (bgColor, fontColor) {
+    // Background Color
+    document.getElementById('bg-swatch').style.backgroundColor = bgColor;
+    document.getElementById('bg-hex').textContent = bgColor;
+    document.getElementById('bg-hex-input').value = bgColor;
+    document.getElementById('modal-bg-color').value = bgColor;
+
+    // Font Color
+    document.getElementById('font-swatch').style.backgroundColor = fontColor;
+    document.getElementById('font-hex').textContent = fontColor;
+    document.getElementById('font-hex-input').value = fontColor;
+    document.getElementById('modal-font-color').value = fontColor;
+
+    // Close palettes if open
+    document.getElementById('bg-palette').classList.add('hidden');
+    document.getElementById('font-palette').classList.add('hidden');
+};
+
+window.toggleColorPalette = function (type) {
+    const palette = document.getElementById(`${type}-palette`);
+    const otherType = type === 'bg' ? 'font' : 'bg';
+    document.getElementById(`${otherType}-palette`).classList.add('hidden');
+    palette.classList.toggle('hidden');
+};
+
+window.handleColorSelect = function (type, color) {
+    const swatch = document.getElementById(`${type}-swatch`);
+    const hexText = document.getElementById(`${type}-hex`);
+    const hexInput = document.getElementById(`${type}-hex-input`);
+    const hiddenInput = document.getElementById(`modal-${type}-color`);
+
+    swatch.style.backgroundColor = color;
+    hexText.textContent = color;
+    hexInput.value = color;
+    hiddenInput.value = color;
+
+    document.getElementById(`${type}-palette`).classList.add('hidden');
+};
+
+function initColorPalettes() {
+    ['bg', 'font'].forEach(type => {
+        const grid = document.getElementById(`${type}-palette-grid`);
+        if (!grid) return;
+        grid.innerHTML = '';
+        PROFESSIONAL_PALETTE.forEach(color => {
+            const btn = document.createElement('div');
+            btn.className = 'color-option';
+            btn.style.backgroundColor = color;
+            btn.onclick = () => window.handleColorSelect(type, color);
+            grid.appendChild(btn);
+        });
+
+        // Add hex input listener
+        const hexInput = document.getElementById(`${type}-hex-input`);
+        hexInput.oninput = (e) => {
+            let val = e.target.value.trim();
+            if (val.length > 0 && !val.startsWith('#')) val = '#' + val;
+            if (/^#[0-9A-F]{6}$/i.test(val) || /^#[0-9A-F]{3}$/i.test(val)) {
+                const swatch = document.getElementById(`${type}-swatch`);
+                const hexText = document.getElementById(`${type}-hex`);
+                const hiddenInput = document.getElementById(`modal-${type}-color`);
+                swatch.style.backgroundColor = val;
+                hexText.textContent = val;
+                hiddenInput.value = val;
+            }
+        };
+    });
+
+    // Close on outside click
+    document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('.custom-color-picker')) {
+            document.getElementById('bg-palette').classList.add('hidden');
+            document.getElementById('font-palette').classList.add('hidden');
+        }
+    });
 }
 
 /**
@@ -1111,6 +1198,7 @@ window.onload = function () {
     xmlUploadInput = document.getElementById('xml-upload-input');
 
     loadDashboardState();
+    initColorPalettes();
 
     addWindowButton.addEventListener('click', () => window.openModal(null));
     xmlUploadInput.addEventListener('change', window.importFromXML);
