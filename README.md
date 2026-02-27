@@ -1,6 +1,6 @@
 # Companion Variable Viewer
 
-Add a configurable variable display window on a freeform canvas with edge snapping for monitoring any variable from companion
+Add a configurable variable display window on a freeform canvas with edge snapping for monitoring any variable from companion.
 
 
 <img width="1369" height="806" alt="Screenshot 2025-10-12 154637" src="https://github.com/user-attachments/assets/12043175-cf6f-4fb0-b86e-8325ea91dc5e" />
@@ -18,8 +18,9 @@ https://trekfan42.github.io/Companion-Variable-Viewer/
 Built for electron
 
 Windows Download:
-https://drive.google.com/file/d/1TpuVMTjrJLZpwLR0ZFTooTJaIEL-EMvR/view?usp=drivesdk
+https://drive.google.com/file/d/1s5G0z6w40uvbA0_zIBFhDyO-aLujpVI-/view?usp=sharing
 
 
 Mac Apple Silicon Download:
+(Outdated, wouldn't mind someone helping here... Let me know if you can build it and I will host it)
 https://drive.google.com/file/d/1fpQY_h03bq-mr4EHwgXTxKFpNkFnpeRz/view?usp=drivesdk
