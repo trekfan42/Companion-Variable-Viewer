@@ -1,6 +1,6 @@
 # Companion Variable Viewer
 
-Add a configurable window on a freeform canvas for monitoring any variable from companion
+Add a configurable variable display window on a freeform canvas with edge snapping for monitoring any variable from companion
 
 
 <img width="1369" height="806" alt="Screenshot 2025-10-12 154637" src="https://github.com/user-attachments/assets/12043175-cf6f-4fb0-b86e-8325ea91dc5e" />
@@ -8,6 +8,10 @@ Add a configurable window on a freeform canvas for monitoring any variable from 
 <img width="1371" height="803" alt="Screenshot 2025-10-12 154657" src="https://github.com/user-attachments/assets/e6405125-a40f-464f-b32e-9dc1375b6c57" />
 
 <img width="1368" height="806" alt="Screenshot 2025-10-12 154721" src="https://github.com/user-attachments/assets/539e795a-9c8a-45a9-a3cc-8aa36524b325" />
+
+
+Run in Browser from Deployments:
+https://trekfan42.github.io/Companion-Variable-Viewer/
 
 
 
