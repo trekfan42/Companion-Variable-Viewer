@@ -3,10 +3,12 @@
     width: 8px;
     height: 8px;
 }
+
 ::-webkit-scrollbar-thumb {
     background-color: #4b5563;
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-track {
     background-color: #1f2937;
 }
@@ -15,13 +17,23 @@
 body {
     background-color: #000 !important;
     margin: 0;
-    overflow: hidden; /* Prevent body scroll, the dashboard handles it */
+    overflow: hidden;
+    /* Prevent body scroll, the dashboard handles it */
+    overscroll-behavior-y: none;
+    /* Prevent pull-to-refresh */
+    -webkit-tap-highlight-color: transparent;
+    /* Remove tap highlight on mobile */
+    user-select: none;
+    /* Prevent text selection in dashboard */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
+
 #dashboard-container {
     position: relative;
     width: 100vw;
     height: 100vh;
-    overflow: auto; /* Allows scrolling if windows are placed off-screen */
+    overflow: auto;
+    /* Allows scrolling if windows are placed off-screen */
 }
 
 /* Variable Window Styles */
@@ -75,6 +87,7 @@ body {
     padding: 1.5rem 0.5rem 0.5rem 0.5rem;
     box-sizing: border-box;
 }
+
 .value-display {
     font-size: 3rem;
     font-weight: 800;
@@ -86,6 +99,7 @@ body {
     overflow-wrap: break-word;
     width: 100%;
 }
+
 .variable-id {
     font-size: 0.75rem;
     color: #9ca3af;
@@ -132,13 +146,21 @@ body {
     right: 2.5rem;
 }
 
-.delete-button:hover { color: #ef4444; }
-.edit-button:hover { color: #2563eb; }
+.delete-button:hover {
+    color: #ef4444;
+}
 
-/* Reveal controls on hover */
+.edit-button:hover {
+    color: #2563eb;
+}
+
+/* Reveal controls on hover or when show-controls class is present */
 .variable-window:hover .delete-button,
 .variable-window:hover .edit-button,
-.variable-window:hover .resizer {
+.variable-window:hover .resizer,
+.variable-window.show-controls .delete-button,
+.variable-window.show-controls .edit-button,
+.variable-window.show-controls .resizer {
     opacity: 1;
     visibility: visible;
 }
@@ -158,15 +180,18 @@ body {
     transition: transform 0.3s ease-in-out;
     overflow-y: auto;
 }
+
 #sidebar.open {
     transform: translateX(0);
 }
+
 /* Hamburger menu now stays in the same place and is on top */
 #sidebar-toggle {
     position: fixed;
     top: 1rem;
     left: 1rem;
-    z-index: 1001; /* CHANGED to 1001 to be higher than snap lines */
+    z-index: 1001;
+    /* CHANGED to 1001 to be higher than snap lines */
     color: white;
     cursor: pointer;
     padding: 0.5rem;
@@ -182,24 +207,31 @@ body {
     max-height: 90vh;
     min-width: 300px;
 }
+
 /* Input Form Styles (Used in Modal) */
 .form-input-small {
-     width: 100%;
-     padding: 0.5rem 0.75rem;
-     background-color: #1f2937;
-     border: 1px solid #374151;
-     border-radius: 0.375rem;
-     font-size: 1rem;
-     color: white;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    color: white;
 }
 
 /* --- Snap Line Styles --- */
-.snap-line-x, .snap-line-y {
-    position: fixed; /* Use fixed so lines cover the entire viewport and don't scroll */
-    z-index: 1000; /* High z-index, but below the sidebar-toggle */
-    pointer-events: none; /* Allows dragging underneath the line */
-    background-color: #00ffff; /* Visible cyan color for alignment */
-    display: none; /* Hidden by default */
+.snap-line-x,
+.snap-line-y {
+    position: fixed;
+    /* Use fixed so lines cover the entire viewport and don't scroll */
+    z-index: 1000;
+    /* High z-index, but below the sidebar-toggle */
+    pointer-events: none;
+    /* Allows dragging underneath the line */
+    background-color: #00ffff;
+    /* Visible cyan color for alignment */
+    display: none;
+    /* Hidden by default */
 }
 
 /* Vertical Snap Line (X position alignment) */
@@ -208,7 +240,8 @@ body {
     bottom: 0;
     width: 2px;
     height: 100vh;
-    left: 0; /* Will be overwritten by JS */
+    left: 0;
+    /* Will be overwritten by JS */
 }
 
 /* Horizontal Snap Line (Y position alignment) */
@@ -217,5 +250,6 @@ body {
     right: 0;
     height: 2px;
     width: 100vw;
-    top: 0; /* Will be overwritten by JS */
+    top: 0;
+    /* Will be overwritten by JS */
 }
