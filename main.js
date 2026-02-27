@@ -2,7 +2,6 @@ const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Global reference to the window object to prevent it from being garbage collected
 let mainWindow;
 
 function createWindow () {
@@ -12,23 +11,18 @@ function createWindow () {
     height: 800,         // Default height
     minWidth: 500,       // Minimum size to prevent issues
     minHeight: 400,
-    backgroundColor: '#000000', // Matches your CSS
+    backgroundColor: '#000000',
     title: 'Companion Variable Dashboard',
     webPreferences: {
       // Allows use of Node.js features in the renderer process (your index.html).
-      // This is generally needed if you want to use Electron features 
-      // like dialogs or native OS functions from your frontend.
-            nodeIntegration: false, // Disable nodeIntegration
-            contextIsolation: true, // Enable contextIsolation
+            nodeIntegration: false,
+            contextIsolation: true,
             preload: path.join(__dirname, 'preload.js') // Optional, for context isolation
         }
     });
 
-  // Load the index.html of the app.
   mainWindow.loadFile('index.html');
 
-  // Optional: Open the DevTools.
-  // mainWindow.webContents.openDevTools(); 
 }
 
 // Function to handle the exportToXML request
