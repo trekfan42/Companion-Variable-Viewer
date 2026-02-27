@@ -196,23 +196,38 @@ function saveDashboardState() {
  * Calculates and sets the font size for the variable value display based on window size.
  */
 function setDynamicFontSize(windowElement) {
-    const width = windowElement.offsetWidth;
-    const height = windowElement.offsetHeight;
-
-    if (width === 0 || height === 0) return;
-
-    const contentWidth = width - 10;
-    const contentHeight = height - 30;
-
-    const widthBasedSize = Math.floor(contentWidth * 0.20);
-    const heightBasedSize = Math.floor(contentHeight * 0.50);
-
-    const finalFontSize = Math.min(widthBasedSize, heightBasedSize);
-
     const valueDisplay = windowElement.querySelector('.value-display');
-    if (valueDisplay) {
-        valueDisplay.style.fontSize = `${finalFontSize}px`;
+    const contentArea = windowElement.querySelector('.window-content');
+    if (!valueDisplay || !contentArea) return;
+
+    // Get the available space within the content area
+    // Subtract a tiny buffer to avoid edge cases
+    const maxWidth = contentArea.clientWidth - 15;
+    const maxHeight = contentArea.clientHeight - 15;
+
+    if (maxWidth <= 0 || maxHeight <= 0) return;
+
+    let minSize = 8;
+    let maxSize = 500;
+    let bestSize = minSize;
+
+    // Binary search for the largest font size that fits
+    while (minSize <= maxSize) {
+        let mid = Math.floor((minSize + maxSize) / 2);
+        valueDisplay.style.fontSize = `${mid}px`;
+
+        // Check if content fits vertically and horizontally
+        // scrollHeight/scrollWidth include padding, but since valueDisplay 
+        // has no padding/border itself (usually), this works.
+        if (valueDisplay.scrollHeight <= maxHeight && valueDisplay.scrollWidth <= maxWidth) {
+            bestSize = mid;
+            minSize = mid + 1;
+        } else {
+            maxSize = mid - 1;
+        }
     }
+
+    valueDisplay.style.fontSize = `${bestSize}px`;
 }
 
 /**
@@ -901,7 +916,20 @@ async function fetchVariable() {
             const windowElement = getWindowElement(win.id);
 
             if (response.ok) {
-                const fetchedValue = await response.text();
+                let fetchedValue = await response.text();
+
+                // Check if the value is wrapped in JSON array brackets and quotes: ["value"]
+                if (fetchedValue.trim().startsWith('["') && fetchedValue.trim().endsWith('"]')) {
+                    try {
+                        const parsed = JSON.parse(fetchedValue);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            fetchedValue = parsed[0];
+                        }
+                    } catch (e) {
+                        // If parsing fails, keep the original fetchedValue
+                    }
+                }
+
                 const value = fetchedValue.replace(/\\n/g, '<br>') || 'N/A';
 
                 win.value = value;
