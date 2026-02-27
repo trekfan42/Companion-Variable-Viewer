@@ -153,17 +153,33 @@
                     </div>
 
                     <div class="flex space-x-4">
-                        <div class="flex-1">
-                            <label for="modal-bg-color" class="block text-sm font-medium text-gray-400 mb-1">Window BG
-                                Color</label>
-                            <input type="color" id="modal-bg-color" value="#000000"
-                                class="w-full h-8 cursor-pointer rounded-md overflow-hidden bg-gray-900 border border-gray-600">
+                        <div class="flex-1 relative">
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Window BG Color</label>
+                            <div class="custom-color-picker" id="bg-picker">
+                                <button type="button" class="color-trigger" onclick="window.toggleColorPalette('bg')">
+                                    <div id="bg-swatch" class="swatch" style="background-color: #000000;"></div>
+                                    <span id="bg-hex">#000000</span>
+                                </button>
+                                <div id="bg-palette" class="palette-popover hidden">
+                                    <div id="bg-palette-grid" class="palette-grid"></div>
+                                    <input type="text" id="bg-hex-input" class="hex-input" placeholder="#000000">
+                                </div>
+                                <input type="hidden" id="modal-bg-color" value="#000000">
+                            </div>
                         </div>
-                        <div class="flex-1">
-                            <label for="modal-font-color" class="block text-sm font-medium text-gray-400 mb-1">Font
-                                Color</label>
-                            <input type="color" id="modal-font-color" value="#ffffff"
-                                class="w-full h-8 cursor-pointer rounded-md overflow-hidden bg-gray-900 border border-gray-600">
+                        <div class="flex-1 relative">
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Font Color</label>
+                            <div class="custom-color-picker" id="font-picker">
+                                <button type="button" class="color-trigger" onclick="window.toggleColorPalette('font')">
+                                    <div id="font-swatch" class="swatch" style="background-color: #ffffff;"></div>
+                                    <span id="font-hex">#ffffff</span>
+                                </button>
+                                <div id="font-palette" class="palette-popover hidden">
+                                    <div id="font-palette-grid" class="palette-grid"></div>
+                                    <input type="text" id="font-hex-input" class="hex-input" placeholder="#FFFFFF">
+                                </div>
+                                <input type="hidden" id="modal-font-color" value="#ffffff">
+                            </div>
                         </div>
                     </div>
 
